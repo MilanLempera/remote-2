@@ -1,46 +1,68 @@
-function coordsToDirection (x: number, y: number) {
-    if (x > 0) {
-        if (y > 0) {
-            return ArrowNames.NorthEast
-        } else if (y < 0) {
-            return ArrowNames.SouthEast
-        } else {
-            return ArrowNames.East
-        }
-    } else if (x < 0) {
-        if (y > 0) {
-            return ArrowNames.NorthWest
-        } else if (y < 0) {
-            return ArrowNames.SouthWest
-        } else {
-            return ArrowNames.West
-        }
+function readButton () {
+    buttonNumber = 0
+    buttonValue = pins.analogReadPin(AnalogPin.P2)
+    if (buttonValue < 256) {
+        buttonNumber = 1
     } else {
-        if (y > 0) {
-            return ArrowNames.North
-        } else if (y < 0) {
-            return ArrowNames.South
+        if (buttonValue < 597) {
+            buttonNumber = 2
+        } else {
+            if (buttonValue < 725) {
+                buttonNumber = 3
+            } else {
+                if (buttonValue < 793) {
+                    buttonNumber = 4
+                } else {
+                    if (buttonValue < 836) {
+                        buttonNumber = 5
+                    } else {
+                        if (buttonValue < 938) {
+                            buttonNumber = 6
+                        }
+                    }
+                }
+            }
         }
-        return 10
     }
 }
 function analogToDirection (value: number) {
-    return Math.round((value - 516) / 105)
+    if (value < 300) {
+        return -2
+    }
+    if (value < 400) {
+        return -1
+    }
+    if (value > 700) {
+        return 2
+    }
+    if (value > 600) {
+        return 1
+    }
+    return 0
 }
-function coordsToSpeed (x: number, y: number) {
-    return Math.max(Math.abs(x), Math.abs(y))
-}
-let speed = 0
+let lastButtonNumber = 0
+let lastYInput = 0
 let yInput = 0
+let lastXInput = 0
 let xInput = 0
+let buttonValue = 0
+let buttonNumber = 0
 let direction = 10
 radio.setGroup(1)
 basic.forever(function () {
     xInput = analogToDirection(pins.analogReadPin(AnalogPin.P0))
+    if (xInput != lastXInput) {
+        radio.sendValue("x", xInput)
+        lastXInput = xInput
+    }
     yInput = analogToDirection(pins.analogReadPin(AnalogPin.P1))
-    speed = coordsToSpeed(xInput, yInput)
-    radio.sendValue("s", speed)
-    direction = coordsToDirection(xInput, yInput)
-    radio.sendValue("d", direction)
-    basic.showArrow(direction)
+    if (yInput != lastYInput) {
+        radio.sendValue("y", yInput)
+        lastYInput = yInput
+    }
+    readButton()
+    if (buttonNumber != lastButtonNumber || buttonNumber != 0) {
+        radio.sendValue("b", buttonNumber)
+        lastButtonNumber = buttonNumber
+    }
 })
